@@ -1,6 +1,6 @@
-# cPanel Otomatik Let's Encrypt SSL (Docker — Sıfır FTP)
+# cPanel Otomatik Let's Encrypt SSL
 
-Bu proje, paylaşımlı **cPanel** hostinglerde (ör. Natro) **AutoSSL'in kapalı olduğu** durumlarda ücretsiz **Let's Encrypt SSL** sertifikasını **3 ayda bir elle uğraşmadan** otomatik olarak almak, yenilemek ve cPanel'e yüklemek için hazırlanmıştır.
+Bu proje, paylaşımlı **cPanel** üzerinden barındırma hizmeti aldığınız sitelerde **AutoSSL'in kapalı olduğu** durumlarda ücretsiz **Let's Encrypt SSL** sertifikasını **3 ayda bir elle uğraşmadan** otomatik olarak almak, yenilemek ve cPanel'e yüklemek için hazırlanmıştır.
 
 FTP şifresi veya ek eklenti gerektirmez; cPanel'in kendi **API Token**'ı üzerinden hem doğrulama dosyasını web dizinine yükler hem de sertifikayı sunucuya kurar.
 
@@ -10,7 +10,7 @@ FTP şifresi veya ek eklenti gerektirmez; cPanel'in kendi **API Token**'ı üzer
 
 ```text
 +-----------------------------------------------------------------------+
-|  Sizin Bilgisayarınız / Sunucunuz (Docker: natro-ssl-bot)             |
+|  Sizin Bilgisayarınız / Sunucunuz (Docker: web-ssl-bot)             |
 |                                                                       |
 |  [entrypoint.sh] ---> Her 12 saatte bir "certbot renew" çalıştırır    |
 |         |                                                             |
@@ -55,6 +55,7 @@ cPanel'e giriş yaptığınızda tarayıcı adres çubuğu şuna benzer:
 ```text
 https://cpls12.srvpanel.com:2083/cpsess1234567890/frontend/...
 ```
+
 Buradan iki bilgiyi not alın:
 * **`CPANEL_HOST`**: `cpls12.srvpanel.com` (`:2083` öncesindeki sunucu adı)
 * **Oturum ön eki**: `/cpsess1234567890`
@@ -66,6 +67,7 @@ Oturumunuz açıkken tarayıcıda şu adresi açın:
 ```text
 https://<CPANEL_HOST>:2083/<cpsess_kodu>/execute/SSL/get_autossl_problems
 ```
+
 * `"status": 1` dönüyorsa cPanel'in kendi **AutoSSL** özelliği hesabınızda açıktır; bu projeye ihtiyacınız olmayabilir.
 * `"You do not have the feature “autossl”."` hatası alıyorsanız AutoSSL kapalıdır — **devam edin.**
 
@@ -76,6 +78,7 @@ Tarayıcıda şu adresi açın:
 ```text
 https://<CPANEL_HOST>:2083/<cpsess_kodu>/execute/SSL/installed_hosts
 ```
+
 * `"status": 1` dönüyorsa SSL kurulum API'si açıktır.
 * Çıktıdaki `"docroot"` alanından web kök dizininizi ve cPanel kullanıcı adınızı görün (ör. `"/home/u1234567/public_html"` → kullanıcı adı: **`u1234567`**).
 
@@ -95,9 +98,9 @@ Dönen JSON içindeki `"token": "..."` değerini kopyalayın ve **kimseyle payla
 ---
 
 ### Kontrol 4: Dışarıdan Token ile `:2083` Portuna Erişebiliyor musunuz?
-Bilgisayarınızda PowerShell (veya terminal) açıp aşağıdaki komutu çalıştırın:
+Bilgisayarınızda shell (veya terminal) açıp aşağıdaki komutu çalıştırın:
 
-```powershell
+```shell
 curl.exe -s "https://<CPANEL_HOST>:2083/execute/SSL/installed_hosts" -H "Authorization: cpanel <CPANEL_KULLANICI>:<API_TOKEN>"
 ```
 * `"status": 1` dönüyorsa Docker dışarıdan cPanel'e bağlanıp sertifika kurabilir.
@@ -107,7 +110,7 @@ curl.exe -s "https://<CPANEL_HOST>:2083/execute/SSL/installed_hosts" -H "Authori
 ### Kontrol 5: Token ile Dosya Okuyup/Yazabiliyor musunuz? (`Fileman` API)
 Son olarak, FTP olmadan doğrulama dosyası atabilmek için `Fileman` API'sinin açık olduğunu doğrulayın:
 
-```powershell
+```shell
 curl.exe -s "https://<CPANEL_HOST>:2083/execute/Fileman/list_files?dir=%2Fhome%2F<CPANEL_KULLANICI>%2Fpublic_html" -H "Authorization: cpanel <CPANEL_KULLANICI>:<API_TOKEN>"
 ```
 * `"status": 1` ve `public_html` içindeki dosyalar listeleniyorsa **her şey tamamdır!**
@@ -119,7 +122,7 @@ curl.exe -s "https://<CPANEL_HOST>:2083/execute/Fileman/list_files?dir=%2Fhome%2
 
 ### 1. Ortam Değişkenlerini (`.env`) Hazırlayın
 `.env.example` dosyasını `.env` olarak kopyalayın:
-```powershell
+```shell
 Copy-Item .env.example .env
 ```
 
@@ -135,49 +138,49 @@ CPANEL_WEBROOT=/home/u1234567/public_html
 ```
 
 ### 2. Docker İmajını Derleyin
-```powershell
+```shell
 docker compose build
 ```
 
 ### 3. Kuru Test (`--dry-run`) Yapın
 Gerçek sertifika kotası harcamadan doğrulama dosyası yükleme, Let's Encrypt kontrolü ve temizlik adımlarını test edin:
-```powershell
-docker compose run --rm natro-ssl certonly `
-  --dry-run `
-  --manual `
-  --preferred-challenges=http `
-  --manual-auth-hook /scripts/auth.sh `
-  --manual-cleanup-hook /scripts/cleanup.sh `
-  --agree-tos `
-  --email "eposta@alanadiniz.com" `
-  --non-interactive `
+```shell
+docker compose run --rm web-ssl certonly \
+  --dry-run \
+  --manual \
+  --preferred-challenges=http \
+  --manual-auth-hook /scripts/auth.sh \
+  --manual-cleanup-hook /scripts/cleanup.sh \
+  --agree-tos \
+  --email "eposta@alanadiniz.com" \
+  --non-interactive \
   -d alanadiniz.com -d www.alanadiniz.com
 ```
 Çıktının sonunda **`The dry run was successful.`** yazısını görmelisiniz.
 
 ### 4. İlk Gerçek Sertifikayı Alın ve cPanel'e Kurun
-```powershell
-docker compose run --rm natro-ssl certonly `
-  --manual `
-  --preferred-challenges=http `
-  --manual-auth-hook /scripts/auth.sh `
-  --manual-cleanup-hook /scripts/cleanup.sh `
-  --deploy-hook /scripts/deploy.sh `
-  --agree-tos `
-  --email "eposta@alanadiniz.com" `
-  --non-interactive `
+```shell
+docker compose run --rm web-ssl certonly \
+  --manual \
+  --preferred-challenges=http \
+  --manual-auth-hook /scripts/auth.sh \
+  --manual-cleanup-hook /scripts/cleanup.sh \
+  --deploy-hook /scripts/deploy.sh \
+  --agree-tos \
+  --email "eposta@alanadiniz.com" \
+  --non-interactive \
   -d alanadiniz.com -d www.alanadiniz.com
 ```
 Bu adım sertifikayı `./letsencrypt` klasörüne kaydeder ve `deploy.sh` aracılığıyla doğrudan cPanel'e yükler.
 
 ### 5. Arka Plan Otomasyonunu Başlatın
-```powershell
+```shell
 docker compose up -d
 ```
 Konteyner arka planda çalışır, her **12 saatte bir** uyanıp sertifika süresini kontrol eder. Sürenin dolmasına **30 günden az** kaldığında yeni sertifikayı alıp otomatik olarak cPanel'e kurar.
 
 ### Yararlı Komutlar
-* **Logları izlemek için:** `docker compose logs -f natro-ssl`
+* **Logları izlemek için:** `docker compose logs -f web-ssl`
 * **Durumu görmek için:** `docker compose ps`
 * **Token yenilemek için:** cPanel oturumunuzda `Tokens/revoke?name=acme_ssl` ardından `Tokens/create_full_access?name=acme_ssl` çağırıp `.env` dosyasını güncelleyin ve `docker compose up -d --force-recreate` çalıştırın.
 
@@ -186,7 +189,7 @@ Konteyner arka planda çalışır, her **12 saatte bir** uyanıp sertifika süre
 ## Proje Dosya Yapısı
 
 * `Dockerfile` — Resmi `certbot/certbot:latest` imajı üzerine scriptleri ekler.
-* `docker-compose.yml` — `natro-ssl` servisini, `.env` dosyasını ve `./letsencrypt` kalıcı hacmini tanımlar.
+* `docker-compose.yml` — `web-ssl` servisini, `.env` dosyasını ve `./letsencrypt` kalıcı hacmini tanımlar.
 * `scripts/entrypoint.sh` — `daemon` modunda 12 saatlik yenileme döngüsünü çalıştırır; diğer argümanları doğrudan `certbot`'a iletir.
 * `scripts/cpanel_api.py` — `auth`, `cleanup` ve `deploy` işlemlerini cPanel UAPI / API2 üzerinden gerçekleştirir.
 * `scripts/auth.sh`, `scripts/cleanup.sh`, `scripts/deploy.sh` — Certbot hook çağrı sarmalayıcıları.
@@ -230,6 +233,7 @@ Değiştirmeniz gereken 3 yer:
      bye
      EOF
      ```
+
    * `scripts/cleanup.sh`:
      ```sh
      #!/bin/sh

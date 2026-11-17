@@ -1,10 +1,10 @@
 services:
-  natro-ssl:
-    build: .
-    container_name: natro-ssl-bot
+  web-ssl:
+    build: ./build
+    container_name: web-ssl-bot
     restart: unless-stopped
     env_file:
       - .env
     volumes:
-      - ./letsencrypt:/etc/letsencrypt
+      - ./volume/letsencrypt:/etc/letsencrypt
     command: ["daemon"]
