@@ -1,0 +1,10 @@
+services:
+  natro-ssl:
+    build: .
+    container_name: natro-ssl-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+    command: ["daemon"]
